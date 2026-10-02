@@ -195,19 +195,24 @@ class MainActivity : Activity() {
         private val areia = Array(6) { IntArray(5) }
         private var corAreia = 1
 
-        // Palavras
-        private val letras = arrayOf(
-            "C A S A R O S A".replace(" ", ""),
-            "M A M A E L U Z".replace(" ", ""),
-            "F L O R P A Z A".replace(" ", ""),
-            "A M O R C A F E".replace(" ", ""),
-            "J O G O S O L A".replace(" ", ""),
-            "P A S S A R O S".replace(" ", ""),
-            "M U S I C A R I".replace(" ", ""),
-            "T E R R A C E U".replace(" ", "")
+        // Caça-palavras
+        private val letras = Array(8) { CharArray(8) { 'A' } }
+        private val niveis = arrayOf(
+            arrayOf("CASA", "FLOR", "SOL", "AMOR"),
+            arrayOf("MAMAE", "LUA", "GATO", "VIDA"),
+            arrayOf("JOGO", "BOLA", "PATO", "CEU"),
+            arrayOf("PAZ", "AMIGO", "CASA", "FLOR"),
+            arrayOf("MUSICA", "DIA", "SOL", "MAR"),
+            arrayOf("FAMILIA", "AMOR", "LUA", "GATO"),
+            arrayOf("JARDIM", "FLOR", "PASSARO", "CEU"),
+            arrayOf("ALEGRIA", "VIDA", "PAZ", "CASA"),
+            arrayOf("CARINHO", "AMIGO", "SOL", "MAR"),
+            arrayOf("MAMAE", "FAMILIA", "AMOR", "FLOR")
         )
+        private var nivelPalavras = 0
         private val encontradas = mutableSetOf<String>()
         private var palavraInicio = -1
+        private var palavraFim = -1
 
         init {
             carregar()
@@ -240,8 +245,11 @@ class MainActivity : Activity() {
                     }
                 }
                 Jogo.PALAVRAS -> {
+                    nivelPalavras = prefs.getInt("palavras_nivel", 0)
+                        .coerceIn(0, niveis.lastIndex)
                     val s = prefs.getString("palavras", "")
                     if (!s.isNullOrEmpty()) encontradas.addAll(s.split(","))
+                    gerarNivelPalavras()
                 }
             }
         }
@@ -257,6 +265,59 @@ class MainActivity : Activity() {
         private fun novoPassaro() {
             passarinhoX = random.nextInt(5)
             passarinhoY = random.nextInt(5)
+        }
+
+        private fun gerarNivelPalavras() {
+            for (y in 0 until 8)
+                for (x in 0 until 8)
+                    letras[y][x] = ('A'.code + random.nextInt(26)).toChar()
+
+            val rng = java.util.Random(5000L + nivelPalavras)
+
+            for (palavra in niveis[nivelPalavras]) {
+                var colocada = false
+
+                repeat(500) {
+                    if (colocada) return@repeat
+
+                    val direcao = rng.nextInt(8)
+                    val dx = when (direcao) {
+                        0, 1, 7 -> 1
+                        2, 6 -> 0
+                        else -> -1
+                    }
+                    val dy = when (direcao) {
+                        0, 2, 3 -> 0
+                        1, 4 -> 1
+                        else -> -1
+                    }
+
+                    if (dx == 0 && dy == 0) return@repeat
+
+                    val x0 = rng.nextInt(8)
+                    val y0 = rng.nextInt(8)
+                    val x1 = x0 + dx * (palavra.length - 1)
+                    val y1 = y0 + dy * (palavra.length - 1)
+
+                    if (x1 !in 0..7 || y1 !in 0..7) return@repeat
+
+                    var pode = true
+
+                    for (i in palavra.indices) {
+                        val ch = letras[y0 + dy * i][x0 + dx * i]
+                        if (ch != 'A' && ch != palavra[i]) {
+                            pode = false
+                            break
+                        }
+                    }
+
+                    if (pode) {
+                        for (i in palavra.indices)
+                            letras[y0 + dy * i][x0 + dx * i] = palavra[i]
+                        colocada = true
+                    }
+                }
+            }
         }
 
         private fun iniciarParafusos() {
@@ -382,18 +443,70 @@ class MainActivity : Activity() {
         }
 
         private fun desenharPalavras(c: Canvas) {
-            val cell = minOf(width/8f, (height-100f)/8f)
-            val ox = (width-cell*8)/2f
-            val oy = 40f
-            paint.textAlign = Paint.Align.CENTER
+            val cell = minOf(width / 8f, (height - 145f) / 8f)
+            val ox = (width - cell * 8) / 2f
+            val oy = 72f
+
+            texto(
+                c,
+                "Nível ${nivelPalavras + 1} de ${niveis.size}",
+                width / 2f,
+                32f,
+                22f,
+                Color.DKGRAY
+            )
+
             for (y in 0 until 8) {
                 for (x in 0 until 8) {
-                    paint.color = if ((x+y)%2==0) Color.rgb(240,235,250) else Color.rgb(250,248,255)
-                    c.drawRect(ox+x*cell,oy+y*cell,ox+(x+1)*cell,oy+(y+1)*cell,paint)
-                    texto(c,letras[y][x].toString(),ox+x*cell+cell/2,oy+y*cell+cell*0.70f,27f,Color.DKGRAY)
+                    val i = y * 8 + x
+                    val selecionado = i == palavraInicio || i == palavraFim
+
+                    paint.color = when {
+                        selecionado -> Color.rgb(205, 180, 240)
+                        (x + y) % 2 == 0 -> Color.rgb(240, 235, 250)
+                        else -> Color.rgb(250, 248, 255)
+                    }
+
+                    c.drawRoundRect(
+                        ox + x * cell + 2,
+                        oy + y * cell + 2,
+                        ox + (x + 1) * cell - 2,
+                        oy + (y + 1) * cell - 2,
+                        8f, 8f, paint
+                    )
+
+                    texto(
+                        c,
+                        letras[y][x].toString(),
+                        ox + x * cell + cell / 2,
+                        oy + y * cell + cell * 0.70f,
+                        minOf(28f, cell * 0.52f),
+                        Color.DKGRAY
+                    )
                 }
             }
-            texto(c,"Encontradas: ${encontradas.size} / 6",width/2f,height-22f,20f,Color.DKGRAY)
+
+            val lista = niveis[nivelPalavras]
+
+            texto(
+                c,
+                lista.joinToString("   ") {
+                    if (it in encontradas) "✓ $it" else "○ $it"
+                },
+                width / 2f,
+                height - 62f,
+                17f,
+                Color.DKGRAY
+            )
+
+            texto(
+                c,
+                "Encontradas: ${encontradas.size} / ${lista.size}",
+                width / 2f,
+                height - 22f,
+                19f,
+                Color.DKGRAY
+            )
         }
 
         override fun onTouchEvent(e: MotionEvent): Boolean {
@@ -484,46 +597,93 @@ class MainActivity : Activity() {
         }
 
         private fun toquePalavra(x:Float,y:Float) {
-            val cell=minOf(width/8f,(height-100f)/8f)
-            val ox=(width-cell*8)/2f
-            val oy=40f
-            val cx=((x-ox)/cell).toInt()
-            val cy=((y-oy)/cell).toInt()
-            if(cx !in 0..7 || cy !in 0..7) return
-            val i=cy*8+cx
-            if(palavraInicio==-1) {
-                palavraInicio=i
-            } else {
-                val fim=i
-                val x1=palavraInicio%8
-                val y1=palavraInicio/8
-                val x2=fim%8
-                val y2=fim/8
-                val dx=(x2-x1).coerceIn(-1,1)
-                val dy=(y2-y1).coerceIn(-1,1)
-                if(dx==0 && dy==0) {
-                    palavraInicio=-1
+            val cell = minOf(width / 8f, (height - 145f) / 8f)
+            val ox = (width - cell * 8) / 2f
+            val oy = 72f
+
+            val cx = ((x - ox) / cell).toInt()
+            val cy = ((y - oy) / cell).toInt()
+
+            if (cx !in 0..7 || cy !in 0..7) return
+
+            val i = cy * 8 + cx
+
+            if (palavraInicio == -1) {
+                palavraInicio = i
+                palavraFim = -1
+                invalidate()
+                return
+            }
+
+            palavraFim = i
+
+            val x1 = palavraInicio % 8
+            val y1 = palavraInicio / 8
+            val x2 = i % 8
+            val y2 = i / 8
+
+            val dx = (x2 - x1).coerceIn(-1, 1)
+            val dy = (y2 - y1).coerceIn(-1, 1)
+
+            if (dx == 0 && dy == 0) {
+                palavraInicio = -1
+                palavraFim = -1
+                invalidate()
+                return
+            }
+
+            val n = maxOf(
+                kotlin.math.abs(x2 - x1),
+                kotlin.math.abs(y2 - y1)
+            ) + 1
+
+            val sb = StringBuilder()
+
+            for (k in 0 until n) {
+                val xx = x1 + dx * k
+                val yy = y1 + dy * k
+
+                if (xx !in 0..7 || yy !in 0..7) {
+                    palavraInicio = -1
+                    palavraFim = -1
+                    invalidate()
                     return
                 }
-                val n=maxOf(kotlin.math.abs(x2-x1),kotlin.math.abs(y2-y1))+1
-                val sb=StringBuilder()
-                for(k in 0 until n) {
-                    val xx=x1+dx*k
-                    val yy=y1+dy*k
-                    if(xx !in 0..7 || yy !in 0..7) {
-                        palavraInicio=-1
-                        return
-                    }
-                    sb.append(letras[yy][xx])
-                }
-                val palavra=sb.toString()
-                val alvo=listOf("CASA","MAMAE","FLOR","AMOR","JOGO","SOL")
-                if(palavra in alvo || palavra.reversed() in alvo) {
-                    encontradas.add(if(palavra in alvo) palavra else palavra.reversed())
-                    prefs.edit().putString("palavras",encontradas.joinToString(",")).apply()
-                }
-                palavraInicio=-1
+
+                sb.append(letras[yy][xx])
             }
+
+            val palavra = sb.toString()
+            val invertida = palavra.reversed()
+            val alvo = niveis[nivelPalavras]
+
+            if (palavra in alvo) {
+                encontradas.add(palavra)
+            } else if (invertida in alvo) {
+                encontradas.add(invertida)
+            }
+
+            prefs.edit()
+                .putString("palavras", encontradas.joinToString(","))
+                .putInt("palavras_nivel", nivelPalavras)
+                .apply()
+
+            if (encontradas.size == alvo.size &&
+                nivelPalavras < niveis.lastIndex
+            ) {
+                nivelPalavras++
+                encontradas.clear()
+                gerarNivelPalavras()
+
+                prefs.edit()
+                    .putInt("palavras_nivel", nivelPalavras)
+                    .remove("palavras")
+                    .apply()
+            }
+
+            palavraInicio = -1
+            palavraFim = -1
+            invalidate()
         }
     }
 
