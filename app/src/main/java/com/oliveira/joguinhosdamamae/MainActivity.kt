@@ -1,63 +1,116 @@
 package com.oliveira.joguinhosdamamae
 
+import android.app.Activity
 import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.widget.GridLayout
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.app.Activity
 
 class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val tela = LinearLayout(this).apply {
+        val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(32, 32, 32, 32)
             setBackgroundColor(Color.WHITE)
+            setPadding(dp(12), dp(10), dp(12), dp(16))
         }
 
         val titulo = TextView(this).apply {
-            text = "🌷 Joguinhos da Mamãe"
-            textSize = 30f
-            setTextColor(Color.rgb(60, 60, 60))
+            text = "🌷  Joguinhos da Mamãe"
+            textSize = 28f
+            setTextColor(Color.rgb(55, 55, 55))
             gravity = Gravity.CENTER
-            setPadding(0, 20, 0, 30)
+            typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+            setPadding(0, dp(4), 0, dp(14))
         }
 
-        tela.addView(titulo)
+        root.addView(
+            titulo,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
 
-        adicionarJogo(tela, "🀄  Mahjong")
-        adicionarJogo(tela, "🐦  Passarinhos")
-        adicionarJogo(tela, "🔩  Parafusos coloridos")
-        adicionarJogo(tela, "🏖️  Areia colorida")
-        adicionarJogo(tela, "🔤  Caça-palavras")
+        val grade = GridLayout(this).apply {
+            columnCount = 2
+            rowCount = 3
+            useDefaultMargins = false
+        }
 
-        setContentView(tela)
+        adicionarTile(grade, "🀄\nMahjong", Color.rgb(230, 245, 235))
+        adicionarTile(grade, "🐦\nPassarinhos", Color.rgb(225, 240, 250))
+        adicionarTile(grade, "🔩\nParafusos\ncoloridos", Color.rgb(245, 235, 215))
+        adicionarTile(grade, "🏖️\nAreia\ncolorida", Color.rgb(250, 240, 215))
+        adicionarTile(grade, "🔤\nCaça-palavras", Color.rgb(235, 230, 250))
+
+        val vazio = TextView(this).apply {
+            setBackgroundColor(Color.TRANSPARENT)
+        }
+        grade.addView(
+            vazio,
+            GridLayout.LayoutParams().apply {
+                width = 0
+                height = dp(150)
+                columnSpec = GridLayout.spec(1)
+                rowSpec = GridLayout.spec(2)
+            }
+        )
+
+        root.addView(
+            grade,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
+
+        setContentView(root)
     }
 
-    private fun adicionarJogo(tela: LinearLayout, nome: String) {
-        val botao = TextView(this).apply {
-            text = nome
-            textSize = 24f
+    private fun adicionarTile(
+        grade: GridLayout,
+        texto: String,
+        cor: Int
+    ) {
+        val tile = TextView(this).apply {
+            text = texto
+            textSize = 22f
+            setTextColor(Color.rgb(45, 45, 45))
             gravity = Gravity.CENTER
-            setTextColor(Color.rgb(50, 50, 50))
-            setBackgroundColor(Color.rgb(240, 240, 240))
-            setPadding(20, 25, 20, 25)
+            typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+
+            background = GradientDrawable().apply {
+                setColor(cor)
+                cornerRadius = dp(3).toFloat()
+            }
+
             isClickable = true
             isFocusable = true
+
+            setOnClickListener {
+                // Os jogos serão ligados aqui.
+            }
         }
 
-        val espaco = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply {
-            setMargins(0, 0, 0, 18)
+        val params = GridLayout.LayoutParams().apply {
+            width = 0
+            height = dp(150)
+            columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+            setMargins(dp(5), dp(5), dp(5), dp(5))
         }
 
-        tela.addView(botao, espaco)
+        grade.addView(tile, params)
+    }
+
+    private fun dp(valor: Int): Int {
+        return (valor * resources.displayMetrics.density).toInt()
     }
 }
