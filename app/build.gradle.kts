@@ -15,6 +15,21 @@ android {
         versionName = "0.1"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("keystore/joguinhos-release.keystore")
+            storePassword = System.getenv("JOGUINHOS_KEYSTORE_PASSWORD")
+            keyAlias = "joguinhos"
+            keyPassword = System.getenv("JOGUINHOS_KEYSTORE_PASSWORD")
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.getByName("release")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
