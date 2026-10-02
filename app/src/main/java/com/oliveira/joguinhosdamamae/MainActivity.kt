@@ -33,7 +33,7 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
             setPadding(0, dp(5), 0, dp(12))
         }
-        root.addView(titulo, LinearLayout.LayoutParams(-1, dp(60)))
+        root.addView(titulo, LinearLayout.LayoutParams(-1, dp(70)))
 
         val grade = GridLayout(this).apply {
             columnCount = 2
@@ -44,7 +44,7 @@ class MainActivity : Activity() {
         tile(grade, "🐦\nPassarinhos", Color.rgb(55, 125, 175), 1)
         tile(grade, "🔩\nParafusos\ncoloridos", Color.rgb(205, 145, 55), 1)
         tile(grade, "🏖️\nAreia\ncolorida", Color.rgb(205, 120, 70), 1)
-        tile(grade, "🔤\nCaça-palavras", Color.rgb(125, 95, 175), 1)
+        tile(grade, "🔤\nCaça-palavras", Color.rgb(125, 95, 175), 2)
 
         root.addView(
             grade,
@@ -74,12 +74,12 @@ class MainActivity : Activity() {
         }
 
         t.setOnClickListener {
-            when (texto.substringAfterLast("\n").trim()) {
-                "Mahjong" -> abrirJogo(Jogo.MAHJONG)
-                "Passarinhos" -> abrirJogo(Jogo.PASSARINHOS)
-                "coloridos" -> abrirJogo(Jogo.PARAFUSOS)
-                "Areia" -> abrirJogo(Jogo.AREIA)
-                "Caça-palavras" -> abrirJogo(Jogo.PALAVRAS)
+            when {
+                texto.contains("Mahjong") -> abrirJogo(Jogo.MAHJONG)
+                texto.contains("Passarinhos") -> abrirJogo(Jogo.PASSARINHOS)
+                texto.contains("Parafusos") -> abrirJogo(Jogo.PARAFUSOS)
+                texto.contains("Areia") -> abrirJogo(Jogo.AREIA)
+                texto.contains("Caça-palavras") -> abrirJogo(Jogo.PALAVRAS)
             }
         }
 
@@ -105,7 +105,7 @@ class MainActivity : Activity() {
         val topo = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(8), dp(5), dp(8), dp(5))
+            setPadding(dp(8), dp(18), dp(8), dp(8))
         }
 
         val voltar = TextView(this).apply {
@@ -123,8 +123,8 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
         }
 
-        topo.addView(voltar, LinearLayout.LayoutParams(dp(55), dp(58)))
-        topo.addView(nome, LinearLayout.LayoutParams(0, dp(58), 1f))
+        topo.addView(voltar, LinearLayout.LayoutParams(dp(60), dp(68)))
+        topo.addView(nome, LinearLayout.LayoutParams(0, dp(68), 1f))
 
         val reiniciar = TextView(this).apply {
             text = "↻"
@@ -136,7 +136,7 @@ class MainActivity : Activity() {
             prefs.edit().remove(jogo.chave).apply()
             abrirJogo(jogo)
         }
-        topo.addView(reiniciar, LinearLayout.LayoutParams(dp(55), dp(58)))
+        topo.addView(reiniciar, LinearLayout.LayoutParams(dp(60), dp(68)))
 
         root.addView(topo)
 
