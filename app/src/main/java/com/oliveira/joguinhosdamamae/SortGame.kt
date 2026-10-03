@@ -1,75 +1,12 @@
 package com.oliveira.joguinhosdamamae
 
 import android.content.Context
-import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Path
-import android.graphics.RectF
 import android.view.Gravity
 import android.view.View
+import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.TextView
-
-class NutView(c: Context, private val col: Int) : View(c) {
-    private val p = Paint(Paint.ANTI_ALIAS_FLAG)
-    override fun onDraw(cv: Canvas) {
-        val w = width.toFloat()
-        val h = height.toFloat()
-        val path = Path().apply {
-            moveTo(w * 0.22f, 0f); lineTo(w * 0.78f, 0f); lineTo(w, h * 0.5f)
-            lineTo(w * 0.78f, h); lineTo(w * 0.22f, h); lineTo(0f, h * 0.5f); close()
-        }
-        p.style = Paint.Style.FILL
-        p.color = col
-        cv.drawPath(path, p)
-        cv.save()
-        cv.clipPath(path)
-        p.color = 0x33000000
-        cv.drawRect(0f, h * 0.65f, w, h, p)
-        p.color = 0x55FFFFFF
-        cv.drawRect(0f, 0f, w, h * 0.28f, p)
-        cv.restore()
-        p.color = 0xFFECEFF1.toInt()
-        cv.drawOval(RectF(w * 0.34f, h * 0.26f, w * 0.66f, h * 0.64f), p)
-        p.style = Paint.Style.STROKE
-        p.strokeWidth = 2f
-        p.color = 0x66000000
-        cv.drawPath(path, p)
-    }
-}
-
-class BoltView(c: Context, private val d: Float) : View(c) {
-    private val p = Paint(Paint.ANTI_ALIAS_FLAG)
-    override fun onDraw(cv: Canvas) {
-        val w = width.toFloat()
-        val h = height.toFloat()
-        p.style = Paint.Style.FILL
-        p.color = 0xFFB0BEC5.toInt()
-        cv.drawRoundRect(RectF(w / 2 - 7 * d, 0f, w / 2 + 7 * d, h - 8 * d), 6 * d, 6 * d, p)
-        p.color = 0x33000000
-        var y = 6 * d
-        while (y < h - 14 * d) {
-            cv.drawRect(w / 2 - 7 * d, y, w / 2 + 7 * d, y + 1.5f * d, p)
-            y += 8 * d
-        }
-        p.color = 0xFFCFD8DC.toInt()
-        cv.drawRoundRect(RectF(w * 0.04f, h - 14 * d, w * 0.96f, h), 7 * d, 7 * d, p)
-    }
-}
-
-class BranchView(c: Context, private val d: Float) : View(c) {
-    private val p = Paint(Paint.ANTI_ALIAS_FLAG)
-    override fun onDraw(cv: Canvas) {
-        val w = width.toFloat()
-        val h = height.toFloat()
-        p.color = 0xFF6D4C41.toInt()
-        cv.drawRoundRect(RectF(0f, h - 11 * d, w, h - 3 * d), 4 * d, 4 * d, p)
-        p.color = 0xFF8D6E63.toInt()
-        cv.drawRoundRect(RectF(0f, h - 11 * d, w, h - 8 * d), 3 * d, 3 * d, p)
-    }
-}
 
 class SortGame(
     c: Context,
@@ -82,17 +19,17 @@ class SortGame(
         0xFF26C6DA.toInt(), 0xFFFBC02D.toInt(), 0xFF8E24AA.toInt(),
         0xFFEC407A.toInt(), 0xFF43A047.toInt(), 0xFF1E88E5.toInt()
     )
-    private val birds = listOf("🦜", "🦉", "🐤", "🐦", "🦆", "🦅", "🐧", "🦩", "🐓")
 
     private var level = 1
     private var tubes = mutableListOf<MutableList<Int>>()
     private val history = mutableListOf<List<List<Int>>>()
     private var sel = -1
+    private val stacks = mutableListOf<LinearLayout>()
 
     init {
         orientation = VERTICAL
         gravity = Gravity.CENTER_HORIZONTAL
-        setPadding(Ui.dp(c, 12), Ui.dp(c, 28), Ui.dp(c, 12), Ui.dp(c, 24))
+        setPadding(Ui.dp(c, 12), Ui.dp(c, 52), Ui.dp(c, 12), Ui.dp(c, 24))
         setBackgroundColor(if (nuts) 0xFF1B2250.toInt() else 0xFF7CC6D4.toInt())
         start()
     }
@@ -122,6 +59,8 @@ class SortGame(
 
     private fun tap(i: Int) {
         if (solved()) return
+        var from = -1
+        var moved = 0
         if (sel < 0) {
             if (tubes[i].isNotEmpty()) sel = i
         } else {
@@ -131,14 +70,63 @@ class SortGame(
                 val col = a.last()
                 if (b.isEmpty() || (b.last() == col && b.size < 4)) {
                     history.add(tubes.map { it.toList() })
+                    from = sel
                     while (a.isNotEmpty() && a.last() == col && b.size < 4) {
                         b.add(a.removeAt(a.lastIndex))
+                        moved++
                     }
                 }
             }
             sel = -1
         }
         draw()
+        if (from >= 0 && moved > 0) animateMove(from, i, moved)
+        if (sel >= 0) liftTop(sel)
+        if (solved()) celebrate()
+    }
+
+    private fun topChild(s: LinearLayout, j: Int): View? =
+        if (nuts) s.getChildAt(j) else s.getChildAt(s.childCount - 1 - j)
+
+    private fun liftTop(i: Int) {
+        val v = topChild(stacks[i], 0) ?: return
+        v.animate().translationY(-Ui.dp(context, 16).toFloat()).setDuration(160)
+            .setInterpolator(OvershootInterpolator()).start()
+    }
+
+    private fun animateMove(from: Int, to: Int, count: Int) {
+        val s = stacks[from]
+        val d = stacks[to]
+        post {
+            val a = IntArray(2)
+            val b = IntArray(2)
+            s.getLocationOnScreen(a)
+            d.getLocationOnScreen(b)
+            val dx = (a[0] - b[0]).toFloat()
+            val dy = (a[1] - b[1]).toFloat() - Ui.dp(context, 40)
+            for (j in 0 until count) {
+                val v = topChild(d, j) ?: continue
+                v.translationX = dx
+                v.translationY = dy
+                v.alpha = 0.3f
+                v.scaleX = 0.8f
+                v.scaleY = 0.8f
+                v.animate().translationX(0f).translationY(0f).alpha(1f).scaleX(1f).scaleY(1f)
+                    .setStartDelay(j * 70L).setDuration(320)
+                    .setInterpolator(OvershootInterpolator(1.4f)).start()
+            }
+        }
+    }
+
+    private fun celebrate() {
+        var n = 0L
+        for (s in stacks) for (k in 0 until s.childCount) {
+            val v = s.getChildAt(k)
+            v.animate().scaleX(1.25f).scaleY(1.25f).setStartDelay(n * 25).setDuration(180)
+                .withEndAction { v.animate().scaleX(1f).scaleY(1f).setDuration(220).start() }
+                .start()
+            n++
+        }
     }
 
     private fun tubeView(i: Int): FrameLayout {
@@ -147,13 +135,14 @@ class SortGame(
         val t = tubes[i]
         val selected = sel == i
         val fl = FrameLayout(c)
+        fl.clipChildren = false
         fl.setOnClickListener { tap(i) }
-        val hl = Ui.shape(
+        fl.background = Ui.shape(
             if (selected) 0x2200E676 else 0x00000000, Ui.dp(c, 14).toFloat(),
             Ui.dp(c, 3), if (selected) 0xFF69F0AE.toInt() else 0x00000000
         )
-        fl.background = hl
         val stack = LinearLayout(c)
+        stack.clipChildren = false
         if (nuts) {
             fl.layoutParams = LinearLayout.LayoutParams(Ui.dp(c, 56), Ui.dp(c, 190)).apply {
                 setMargins(Ui.dp(c, 3), Ui.dp(c, 6), Ui.dp(c, 3), Ui.dp(c, 6))
@@ -168,30 +157,31 @@ class SortGame(
                 })
             }
         } else {
-            fl.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 74)).apply {
+            fl.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 78)).apply {
                 setMargins(0, Ui.dp(c, 4), 0, Ui.dp(c, 4))
             }
             fl.addView(BranchView(c, d))
             stack.orientation = HORIZONTAL
             stack.gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-            stack.setPadding(0, 0, 0, Ui.dp(c, 8))
+            stack.setPadding(0, 0, 0, Ui.dp(c, 10))
             for (k in t) {
-                stack.addView(TextView(c).apply {
-                    text = birds[k]
-                    textSize = 36f
-                    setPadding(Ui.dp(c, 6), 0, Ui.dp(c, 6), 0)
+                stack.addView(BirdView(c, k), LinearLayout.LayoutParams(Ui.dp(c, 46), Ui.dp(c, 46)).apply {
+                    setMargins(Ui.dp(c, 6), 0, Ui.dp(c, 6), 0)
                 })
             }
         }
         fl.addView(stack, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT
         ))
+        stacks.add(stack)
         return fl
     }
 
     private fun draw() {
         val c = context
         removeAllViews()
+        stacks.clear()
+        clipChildren = false
 
         val bar = Ui.row(c)
         bar.addView(Ui.smallBtn(c, "← Menu") { onBack() })
@@ -210,8 +200,10 @@ class SortGame(
             var rowView: LinearLayout? = null
             for (i in tubes.indices) {
                 if (i % 5 == 0) {
-                    rowView = Ui.row(c)
-                    addView(rowView)
+                    val r = Ui.row(c)
+                    r.clipChildren = false
+                    addView(r)
+                    rowView = r
                 }
                 rowView!!.addView(tubeView(i))
             }
