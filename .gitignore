@@ -11,3 +11,6 @@ keystore/
 .idea/
 *.iml
 .DS_Store
+build/
+.gradle/
+local.properties
