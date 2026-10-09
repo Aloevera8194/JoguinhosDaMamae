@@ -24,7 +24,7 @@ val SAND_COLORS = intArrayOf(
 
 class SandPotView(c: Context) : View(c) {
     var layers: List<Int> = emptyList()
-    var selected = false
+    var picked = false
     var popCount = 0
     var drain: List<Int> = emptyList()
     var anim = 1f
@@ -93,7 +93,7 @@ class SandPotView(c: Context) : View(c) {
 
         p.style = Paint.Style.STROKE
         p.strokeWidth = 2 * d
-        p.color = if (selected) 0xFF69F0AE.toInt() else 0x99FFFFFF.toInt()
+        p.color = if (picked) 0xFF69F0AE.toInt() else 0x99FFFFFF.toInt()
         cv.drawPath(glass, p)
         p.style = Paint.Style.FILL
         p.color = 0x40FFFFFF
@@ -246,7 +246,7 @@ class SandGame(
             }
             val v = SandPotView(c)
             v.layers = tubes[i].toList()
-            v.selected = sel == i
+            v.picked = sel == i
             v.setOnClickListener { tap(i) }
             v.layoutParams = LinearLayout.LayoutParams(Ui.dp(c, 70), Ui.dp(c, 176)).apply {
                 setMargins(Ui.dp(c, 4), Ui.dp(c, 6), Ui.dp(c, 4), Ui.dp(c, 6))
