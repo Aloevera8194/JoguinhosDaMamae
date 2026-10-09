@@ -21,6 +21,8 @@ class MainActivity : Activity() {
         root.addView(Ui.btn(this, "🀄 Mahjong") { open(MahjongGame(this, ::showMenu)) })
         root.addView(Ui.btn(this, "🔎 Caça-Palavras") { open(WordSearchGame(this, ::showMenu)) })
         root.addView(Ui.btn(this, "✏️ Palavras Cruzadas") { open(CrosswordGame(this, ::showMenu)) })
+        root.addView(Ui.btn(this, "🎨 Areia Colorida") { open(SandGame(this, ::showMenu)) })
+        root.addView(Ui.btn(this, "🔢 Sudoku") { open(SudokuGame(this, ::showMenu)) })
         setContentView(Ui.scroll(this, root))
     }
 
