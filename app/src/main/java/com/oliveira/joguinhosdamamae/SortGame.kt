@@ -2,11 +2,15 @@ package com.oliveira.joguinhosdamamae
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
 import android.view.animation.OvershootInterpolator
+import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.TextView
 
 class SortGame(
     c: Context,
@@ -21,16 +25,25 @@ class SortGame(
     )
 
     private var level = 1
+    private var moves = 0
     private var tubes = mutableListOf<MutableList<Int>>()
     private val history = mutableListOf<List<List<Int>>>()
     private var sel = -1
+    private var hintFrom = -1
+    private var hintTo = -1
+    private var msgView: TextView? = null
     private val stacks = mutableListOf<LinearLayout>()
 
     init {
         orientation = VERTICAL
         gravity = Gravity.CENTER_HORIZONTAL
-        setPadding(Ui.dp(c, 12), Ui.dp(c, 52), Ui.dp(c, 12), Ui.dp(c, 24))
-        setBackgroundColor(if (nuts) 0xFF1B2250.toInt() else 0xFF7CC6D4.toInt())
+        setPadding(Ui.dp(c, 12), Ui.dp(c, 44), Ui.dp(c, 12), Ui.dp(c, 24))
+        background = GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            if (nuts) intArrayOf(0xFF283593.toInt(), 0xFF0D1333.toInt())
+            else intArrayOf(0xFF81D4FA.toInt(), 0xFF0288D1.toInt())
+        )
+        clipChildren = false
         start()
     }
 
@@ -46,6 +59,9 @@ class SortGame(
         } while (solved())
         history.clear()
         sel = -1
+        moves = 0
+        hintFrom = -1
+        hintTo = -1
         draw()
     }
 
@@ -53,12 +69,58 @@ class SortGame(
         if (history.isNotEmpty()) {
             tubes = history.removeAt(history.lastIndex).map { it.toMutableList() }.toMutableList()
             sel = -1
+            hintFrom = -1
+            hintTo = -1
+            if (moves > 0) moves--
             draw()
         }
     }
 
+    private fun findMove(): Pair<Int, Int>? {
+        var best: Pair<Int, Int>? = null
+        for (a in tubes.indices) {
+            val ta = tubes[a]
+            if (ta.isEmpty()) continue
+            val col = ta.last()
+            if (ta.size == 4 && ta.all { it == col }) continue
+            val uniform = ta.all { it == col }
+            for (b in tubes.indices) {
+                if (a == b) continue
+                val tb = tubes[b]
+                if (tb.isEmpty()) {
+                    if (!uniform && best == null) best = Pair(a, b)
+                } else if (tb.last() == col && tb.size < 4) {
+                    return Pair(a, b)
+                }
+            }
+        }
+        return best
+    }
+
+    private fun hint() {
+        if (solved()) return
+        val m = findMove()
+        if (m == null) {
+            msgView?.text = "Sem jogadas. Desfaça ou reinicie"
+            return
+        }
+        sel = -1
+        hintFrom = m.first
+        hintTo = m.second
+        draw()
+        postDelayed({
+            if (hintFrom == m.first && hintTo == m.second) {
+                hintFrom = -1
+                hintTo = -1
+                draw()
+            }
+        }, 2200)
+    }
+
     private fun tap(i: Int) {
         if (solved()) return
+        hintFrom = -1
+        hintTo = -1
         var from = -1
         var moved = 0
         if (sel < 0) {
@@ -79,6 +141,7 @@ class SortGame(
             }
             sel = -1
         }
+        if (moved > 0) moves++
         draw()
         if (from >= 0 && moved > 0) animateMove(from, i, moved)
         if (sel >= 0) liftTop(sel)
@@ -129,17 +192,54 @@ class SortGame(
         }
     }
 
+    private fun pill(label: String, bg: Int, onClick: () -> Unit): Button {
+        val c = context
+        return Button(c).apply {
+            text = label
+            textSize = 14f
+            isAllCaps = false
+            setTextColor(Color.WHITE)
+            background = Ui.shape(bg, Ui.dp(c, 14).toFloat())
+            setOnClickListener { onClick() }
+            layoutParams = LinearLayout.LayoutParams(0, Ui.dp(c, 46), 1f).apply {
+                setMargins(Ui.dp(c, 4), Ui.dp(c, 6), Ui.dp(c, 4), Ui.dp(c, 4))
+            }
+        }
+    }
+
+    private fun chip(label: String): TextView {
+        val c = context
+        return TextView(c).apply {
+            text = label
+            textSize = 14f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
+            setPadding(Ui.dp(c, 14), Ui.dp(c, 6), Ui.dp(c, 14), Ui.dp(c, 6))
+            background = Ui.shape(0x33FFFFFF, Ui.dp(c, 16).toFloat())
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { setMargins(Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4)) }
+        }
+    }
+
     private fun tubeView(i: Int): FrameLayout {
         val c = context
         val d = c.resources.displayMetrics.density
         val t = tubes[i]
-        val selected = sel == i
+        val picked = sel == i
+        val hinted = hintFrom == i || hintTo == i
         val fl = FrameLayout(c)
         fl.clipChildren = false
         fl.setOnClickListener { tap(i) }
+        val strokeColor = when {
+            picked -> 0xFF69F0AE.toInt()
+            hinted -> 0xFFFFD54F.toInt()
+            else -> 0x22FFFFFF
+        }
         fl.background = Ui.shape(
-            if (selected) 0x2200E676 else 0x00000000, Ui.dp(c, 14).toFloat(),
-            Ui.dp(c, 3), if (selected) 0xFF69F0AE.toInt() else 0x00000000
+            if (picked) 0x3300E676 else 0x14FFFFFF, Ui.dp(c, 18).toFloat(),
+            Ui.dp(c, 3), strokeColor
         )
         val stack = LinearLayout(c)
         stack.clipChildren = false
@@ -185,15 +285,22 @@ class SortGame(
 
         val bar = Ui.row(c)
         bar.addView(Ui.smallBtn(c, "← Menu") { onBack() })
-        bar.addView(Ui.text(c, if (nuts) "Porcas · Nível $level" else "Pássaros · Nível $level", 18f, true).apply {
+        bar.addView(Ui.text(c, if (nuts) "Porcas" else "Pássaros", 20f, true).apply {
             setTextColor(Color.WHITE)
             setPadding(Ui.dp(c, 12), 0, 0, 0)
         })
         addView(bar)
+
+        val info = Ui.row(c)
+        info.addView(chip("Nível $level"))
+        info.addView(chip("Jogadas $moves"))
+        addView(info)
+
         val msg = Ui.text(c, "", 18f, true).apply {
             setTextColor(0xFFFFEB3B.toInt())
             setPadding(0, Ui.dp(c, 8), 0, Ui.dp(c, 8))
         }
+        msgView = msg
         addView(msg)
 
         if (nuts) {
@@ -212,8 +319,9 @@ class SortGame(
         }
 
         val bottom = Ui.row(c)
-        bottom.addView(Ui.smallBtn(c, "↩ Desfazer") { undo() })
-        bottom.addView(Ui.smallBtn(c, "🔄 Reiniciar") { start() })
+        bottom.addView(pill("💡 Dica", 0xFFF9A825.toInt()) { hint() })
+        bottom.addView(pill("↩ Desfazer", 0xFF5C6BC0.toInt()) { undo() })
+        bottom.addView(pill("🔄 Reiniciar", 0xFF26A69A.toInt()) { start() })
         addView(bottom)
 
         if (solved()) {
