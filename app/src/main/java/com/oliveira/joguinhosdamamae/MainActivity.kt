@@ -30,7 +30,8 @@ class MainActivity : Activity() {
             Item("🀄", "Mahjong", 0xFFD32F2F.toInt(), 0xFFEF5350.toInt()) { MahjongGame(this, ::showMenu) },
             Item("🔎", "Caça-Palavras", 0xFF43A047.toInt(), 0xFF81C784.toInt()) { WordSearchGame(this, ::showMenu) },
             Item("✏️", "Palavras Cruzadas", 0xFFF57C00.toInt(), 0xFFFFB74D.toInt()) { CrosswordGame(this, ::showMenu) },
-            Item("🔢", "Sudoku", 0xFF1E88E5.toInt(), 0xFF64B5F6.toInt()) { SudokuGame(this, ::showMenu) }
+            Item("🔢", "Sudoku", 0xFF1E88E5.toInt(), 0xFF64B5F6.toInt()) { SudokuGame(this, ::showMenu) },
+            Item("🧠", "Memória", 0xFFD81B60.toInt(), 0xFFF06292.toInt()) { MemoryGame(this, ::showMenu) }
         )
 
         val root = LinearLayout(this)
