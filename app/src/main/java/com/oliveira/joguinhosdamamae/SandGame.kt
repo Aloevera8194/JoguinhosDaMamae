@@ -108,7 +108,7 @@ class SandGame(
     private val onBack: () -> Unit
 ) : LinearLayout(c) {
 
-    private var level = 1
+    private var level = Progress.level(c, "areia")
     private var tubes = mutableListOf<MutableList<Int>>()
     private val history = mutableListOf<List<List<Int>>>()
     private var sel = -1
@@ -129,13 +129,7 @@ class SandGame(
     private fun solved() = tubes.all { t -> t.isEmpty() || (t.size == 4 && t.all { it == t[0] }) }
 
     private fun start() {
-        val n = minOf(3 + level, 9)
-        do {
-            val all = (0 until n).flatMap { listOf(it, it, it, it) }.shuffled()
-            tubes = MutableList(n) { i -> all.subList(i * 4, i * 4 + 4).toMutableList() }
-            tubes.add(mutableListOf())
-            tubes.add(mutableListOf())
-        } while (solved())
+        tubes = SortGen.generate(SortGen.colorsFor(level), SortGen.emptiesFor(level), SortGen.movesFor(level))
         history.clear()
         sel = -1
         render()
@@ -268,7 +262,7 @@ class SandGame(
 
         if (solved()) {
             msg.text = "🎉 Parabéns!"
-            addView(Ui.btn(c, "Próximo nível →") { level++; start() })
+            addView(Ui.btn(c, "Próximo nível →") { level++; Progress.setLevel(c, "areia", level); start() })
         }
     }
 }

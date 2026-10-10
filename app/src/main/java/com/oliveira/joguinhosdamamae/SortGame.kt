@@ -24,7 +24,7 @@ class SortGame(
         0xFFEC407A.toInt(), 0xFF43A047.toInt(), 0xFF1E88E5.toInt()
     )
 
-    private var level = 1
+    private var level = Progress.level(c, if (nuts) "porcas" else "passaros")
     private var moves = 0
     private var tubes = mutableListOf<MutableList<Int>>()
     private val history = mutableListOf<List<List<Int>>>()
@@ -50,13 +50,7 @@ class SortGame(
     private fun solved() = tubes.all { t -> t.isEmpty() || (t.size == 4 && t.all { it == t[0] }) }
 
     private fun start() {
-        val n = minOf(3 + level, 9)
-        do {
-            val all = (0 until n).flatMap { listOf(it, it, it, it) }.shuffled()
-            tubes = MutableList(n) { i -> all.subList(i * 4, i * 4 + 4).toMutableList() }
-            tubes.add(mutableListOf())
-            tubes.add(mutableListOf())
-        } while (solved())
+        tubes = SortGen.generate(SortGen.colorsFor(level), SortGen.emptiesFor(level), SortGen.movesFor(level))
         history.clear()
         sel = -1
         moves = 0
@@ -326,7 +320,7 @@ class SortGame(
 
         if (solved()) {
             msg.text = "🎉 Parabéns!"
-            addView(Ui.btn(c, "Próximo nível →") { level++; start() })
+            addView(Ui.btn(c, "Próximo nível →") { level++; Progress.setLevel(c, if (nuts) "porcas" else "passaros", level); start() })
         }
     }
 }

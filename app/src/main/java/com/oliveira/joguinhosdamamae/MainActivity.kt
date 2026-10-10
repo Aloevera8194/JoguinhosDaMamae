@@ -14,7 +14,14 @@ import android.widget.TextView
 class MainActivity : Activity() {
     private var inMenu = true
 
-    private class Item(val icon: String, val name: String, val c1: Int, val c2: Int, val make: () -> View)
+    private class Item(
+        val icon: String,
+        val name: String,
+        val c1: Int,
+        val c2: Int,
+        val key: String?,
+        val make: () -> View
+    )
 
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
@@ -24,16 +31,16 @@ class MainActivity : Activity() {
     fun showMenu() {
         inMenu = true
         val items = listOf(
-            Item("🔩", "Ordenar Porcas", 0xFF3949AB.toInt(), 0xFF7986CB.toInt()) { SortGame(this, true, ::showMenu) },
-            Item("🐦", "Ordenar Pássaros", 0xFF00ACC1.toInt(), 0xFF4DD0E1.toInt()) { SortGame(this, false, ::showMenu) },
-            Item("🎨", "Areia Colorida", 0xFF8E24AA.toInt(), 0xFFBA68C8.toInt()) { SandGame(this, ::showMenu) },
-            Item("🀄", "Mahjong", 0xFFD32F2F.toInt(), 0xFFEF5350.toInt()) { MahjongGame(this, ::showMenu) },
-            Item("🔎", "Caça-Palavras", 0xFF43A047.toInt(), 0xFF81C784.toInt()) { WordSearchGame(this, ::showMenu) },
-            Item("✏️", "Palavras Cruzadas", 0xFFF57C00.toInt(), 0xFFFFB74D.toInt()) { CrosswordGame(this, ::showMenu) },
-            Item("🔢", "Sudoku", 0xFF1E88E5.toInt(), 0xFF64B5F6.toInt()) { SudokuGame(this, ::showMenu) },
-            Item("🧠", "Memória", 0xFFD81B60.toInt(), 0xFFF06292.toInt()) { MemoryGame(this, ::showMenu) },
-            Item("🍬", "Combinar 3", 0xFF00695C.toInt(), 0xFF26A69A.toInt()) { MatchGame(this, ::showMenu) },
-            Item("🃏", "Paciência", 0xFF6D4C41.toInt(), 0xFFA1887F.toInt()) { SolitaireGame(this, ::showMenu) }
+            Item("🔩", "Ordenar Porcas", 0xFF3949AB.toInt(), 0xFF7986CB.toInt(), "porcas") { SortGame(this, true, ::showMenu) },
+            Item("🐦", "Ordenar Pássaros", 0xFF00ACC1.toInt(), 0xFF4DD0E1.toInt(), "passaros") { SortGame(this, false, ::showMenu) },
+            Item("🎨", "Areia Colorida", 0xFF8E24AA.toInt(), 0xFFBA68C8.toInt(), "areia") { SandGame(this, ::showMenu) },
+            Item("🀄", "Mahjong", 0xFFD32F2F.toInt(), 0xFFEF5350.toInt(), null) { MahjongGame(this, ::showMenu) },
+            Item("🔎", "Caça-Palavras", 0xFF43A047.toInt(), 0xFF81C784.toInt(), null) { WordSearchGame(this, ::showMenu) },
+            Item("✏️", "Palavras Cruzadas", 0xFFF57C00.toInt(), 0xFFFFB74D.toInt(), null) { CrosswordGame(this, ::showMenu) },
+            Item("🔢", "Sudoku", 0xFF1E88E5.toInt(), 0xFF64B5F6.toInt(), null) { SudokuGame(this, ::showMenu) },
+            Item("🧠", "Memória", 0xFFD81B60.toInt(), 0xFFF06292.toInt(), null) { MemoryGame(this, ::showMenu) },
+            Item("🍬", "Combinar 3", 0xFF00695C.toInt(), 0xFF26A69A.toInt(), null) { MatchGame(this, ::showMenu) },
+            Item("🃏", "Paciência", 0xFF6D4C41.toInt(), 0xFFA1887F.toInt(), null) { SolitaireGame(this, ::showMenu) }
         )
 
         val root = LinearLayout(this)
@@ -110,8 +117,24 @@ class MainActivity : Activity() {
         label.setPadding(Ui.dp(c, 8), Ui.dp(c, 6), Ui.dp(c, 8), 0)
         box.addView(label)
 
+        val key = item.key
+        if (key != null) {
+            val badge = TextView(c)
+            badge.text = "Nível " + Progress.level(c, key)
+            badge.textSize = 14f
+            badge.setTypeface(null, Typeface.BOLD)
+            badge.setTextColor(Color.WHITE)
+            badge.gravity = Gravity.CENTER
+            badge.setPadding(Ui.dp(c, 10), Ui.dp(c, 2), Ui.dp(c, 10), Ui.dp(c, 2))
+            badge.background = Ui.shape(0x44000000, Ui.dp(c, 10).toFloat())
+            badge.layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { setMargins(0, Ui.dp(c, 6), 0, 0) }
+            box.addView(badge)
+        }
+
         box.setOnClickListener { open(item.make()) }
-        box.layoutParams = LinearLayout.LayoutParams(0, Ui.dp(c, 132), 1f).apply {
+        box.layoutParams = LinearLayout.LayoutParams(0, Ui.dp(c, 142), 1f).apply {
             setMargins(Ui.dp(c, 8), Ui.dp(c, 8), Ui.dp(c, 8), Ui.dp(c, 8))
         }
         box.alpha = 0f
