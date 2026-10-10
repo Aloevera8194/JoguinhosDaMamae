@@ -432,7 +432,7 @@ class MatchGame(
     private val onBack: () -> Unit
 ) : LinearLayout(c) {
 
-    private var level = 1
+    private var level = Progress.level(c, "combinar3")
     private var score = 0
     private var reached = false
 
@@ -453,7 +453,7 @@ class MatchGame(
         start()
     }
 
-    private fun goal() = 250 + 150 * level
+    private fun goal() = 250 + 200 * level
 
     private fun pill(label: String, bg: Int, onClick: () -> Unit): Button {
         val c = context
@@ -517,6 +517,7 @@ class MatchGame(
                 nextHolder.addView(Ui.btn(context, "Próximo nível →") {
                     if (!board.isBusy()) {
                         level++
+                        Progress.setLevel(context, "combinar3", level)
                         start()
                     }
                 })

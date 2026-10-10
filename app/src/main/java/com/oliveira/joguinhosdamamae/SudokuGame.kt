@@ -188,8 +188,8 @@ class SudokuGame(
     private val onBack: () -> Unit
 ) : LinearLayout(c) {
 
-    private val levels = listOf("Fácil" to 40, "Médio" to 32, "Difícil" to 27)
-    private var levelIdx = 0
+    private var maxLevel = Progress.level(c, "sudoku")
+    private var level = Progress.level(c, "sudoku")
     private var sol = IntArray(81)
     private var given = IntArray(81)
     private var cur = IntArray(81)
@@ -197,10 +197,13 @@ class SudokuGame(
     private var sel = -1
     private var noteMode = false
     private val history = ArrayList<Pair<IntArray, IntArray>>()
-    private val levelBtns = ArrayList<TextView>()
     private lateinit var board: SudokuBoardView
     private lateinit var msg: TextView
     private lateinit var noteBtn: TextView
+    private lateinit var prevBtn: TextView
+    private lateinit var nextBtn: TextView
+    private lateinit var levelView: TextView
+    private lateinit var nextHolder: LinearLayout
 
     init {
         orientation = VERTICAL
@@ -215,11 +218,11 @@ class SudokuGame(
         val c = context
         return TextView(c).apply {
             text = label
-            textSize = 13f
+            textSize = 14f
             gravity = Gravity.CENTER
             setTypeface(null, Typeface.BOLD)
             setOnClickListener { onClick() }
-            layoutParams = LinearLayout.LayoutParams(0, Ui.dp(c, 44), 1f).apply {
+            layoutParams = LinearLayout.LayoutParams(0, Ui.dp(c, 46), 1f).apply {
                 setMargins(Ui.dp(c, 3), Ui.dp(c, 3), Ui.dp(c, 3), Ui.dp(c, 3))
             }
         }
@@ -235,14 +238,12 @@ class SudokuGame(
         msg = Ui.header(c, this, "🔢 Sudoku") { onBack() }
 
         val lv = Ui.row(c)
-        levels.forEachIndexed { k, (name, _) ->
-            val b = pill(name) {
-                levelIdx = k
-                newGame()
-            }
-            levelBtns.add(b)
-            lv.addView(b)
-        }
+        prevBtn = pill("◀ Anterior") { goLevel(level - 1) }
+        levelView = pill("Nível") { }
+        nextBtn = pill("Próximo ▶") { goLevel(level + 1) }
+        lv.addView(prevBtn)
+        lv.addView(levelView)
+        lv.addView(nextBtn)
         addView(lv)
 
         board = SudokuBoardView(c)
@@ -254,6 +255,10 @@ class SudokuGame(
             push()
         }
         addView(board)
+
+        nextHolder = LinearLayout(c)
+        nextHolder.orientation = LinearLayout.VERTICAL
+        addView(nextHolder)
 
         val act = Ui.row(c)
         noteBtn = pill("✏️ Notas") {
@@ -285,11 +290,21 @@ class SudokuGame(
         addView(Ui.btn(c, "🔄 Novo jogo") { newGame() })
     }
 
+    private fun goLevel(n: Int) {
+        if (n < 1 || n > maxLevel) return
+        level = n
+        newGame()
+    }
+
+    private fun clues() = maxOf(24, 46 - 2 * level)
+
     private fun refresh() {
-        levelBtns.forEachIndexed { k, b ->
-            if (k == levelIdx) paint(b, 0xFF3F51B5.toInt(), Color.WHITE)
-            else paint(b, 0xFFD6DCF5.toInt(), 0xFF283593.toInt())
-        }
+        levelView.text = "Nível $level"
+        paint(levelView, 0xFF3F51B5.toInt(), Color.WHITE)
+        if (level > 1) paint(prevBtn, 0xFFD6DCF5.toInt(), 0xFF283593.toInt())
+        else paint(prevBtn, 0xFFE8EAF0.toInt(), 0xFFAAAAAA.toInt())
+        if (level < maxLevel) paint(nextBtn, 0xFFD6DCF5.toInt(), 0xFF283593.toInt())
+        else paint(nextBtn, 0xFFE8EAF0.toInt(), 0xFFAAAAAA.toInt())
         if (noteMode) paint(noteBtn, 0xFF43A047.toInt(), Color.WHITE)
         else paint(noteBtn, 0xFFC8E6C9.toInt(), 0xFF1B5E20.toInt())
         noteBtn.text = if (noteMode) "✏️ Notas ON" else "✏️ Notas"
@@ -308,17 +323,32 @@ class SudokuGame(
 
     private fun update() {
         push()
-        msg.text = if (solved()) "🎉 Parabéns!" else ""
+        if (solved()) {
+            msg.text = "🎉 Parabéns!"
+            if (nextHolder.childCount == 0) {
+                nextHolder.addView(Ui.btn(context, "Próximo nível →") {
+                    level++
+                    if (level > maxLevel) {
+                        maxLevel = level
+                        Progress.setLevel(context, "sudoku", maxLevel)
+                    }
+                    newGame()
+                })
+            }
+        } else {
+            msg.text = ""
+        }
     }
 
     private fun newGame() {
         sol = SudokuGen.fullGrid()
-        given = SudokuGen.puzzle(sol, levels[levelIdx].second)
+        given = SudokuGen.puzzle(sol, clues())
         cur = given.copyOf()
         notes = IntArray(81)
         history.clear()
         sel = -1
         msg.text = ""
+        nextHolder.removeAllViews()
         push()
         refresh()
     }

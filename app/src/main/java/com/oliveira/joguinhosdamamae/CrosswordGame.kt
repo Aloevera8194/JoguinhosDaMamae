@@ -121,31 +121,8 @@ class CrosswordGame(
     private val onBack: () -> Unit
 ) : LinearLayout(c) {
 
-    private val puzzles = listOf(
-        listOf(
-            CwWord(0, 0, true, "FLOR", "Enfeita o jardim"),
-            CwWord(0, 0, false, "FOGO", "Queima e dá calor"),
-            CwWord(0, 2, false, "OVAL", "Formato de ovo"),
-            CwWord(2, 0, true, "GRAU", "Unidade de temperatura")
-        ),
-        listOf(
-            CwWord(0, 0, true, "PRAIA", "Areia e mar"),
-            CwWord(0, 0, false, "PATO", "Ave que nada e faz quá"),
-            CwWord(0, 2, false, "AMOR", "Sentimento de carinho"),
-            CwWord(0, 4, false, "ALHO", "Tempero branco em dentes"),
-            CwWord(3, 2, true, "RIO", "Água que corre para o mar")
-        ),
-        listOf(
-            CwWord(0, 0, true, "BOLO", "Doce de aniversário"),
-            CwWord(0, 0, false, "BEIJO", "Carinho dado com os lábios"),
-            CwWord(0, 2, false, "LUA", "Brilha à noite"),
-            CwWord(2, 0, true, "IRA", "Raiva"),
-            CwWord(4, 0, true, "OLHO", "Usamos para ver")
-        )
-    )
-
-    private var idx = 0
-    private var words: List<CwWord> = puzzles[0]
+    private var level = Progress.level(c, "cruzadas")
+    private var words: List<CwWord> = emptyList()
     private val answers = mutableMapOf<Int, Char>()
     private val entries = mutableMapOf<Int, Char>()
     private val status = mutableMapOf<Int, Int>()
@@ -288,7 +265,7 @@ class CrosswordGame(
     }
 
     private fun loadPuzzle() {
-        words = puzzles[idx]
+        words = CwGen.generate(level)
         answers.clear()
         entries.clear()
         status.clear()
@@ -301,7 +278,7 @@ class CrosswordGame(
         done = false
         curKey = words[0].cells()[0]
         acrossDir = words[0].across
-        titleView.text = "Cruzada ${idx + 1}/${puzzles.size}"
+        titleView.text = "Cruzada · Nível $level"
         msg.text = ""
         nextHolder.removeAllViews()
         buildClues()
@@ -386,7 +363,7 @@ class CrosswordGame(
             msg.text = "🎉 Tudo certo!"
             nextHolder.removeAllViews()
             nextHolder.addView(Ui.btn(context, "Próxima cruzada →") {
-                idx = (idx + 1) % puzzles.size
+                level++; Progress.setLevel(context, "cruzadas", level)
                 loadPuzzle()
             })
             grid.animate().scaleX(1.03f).scaleY(1.03f).setDuration(160).withEndAction {

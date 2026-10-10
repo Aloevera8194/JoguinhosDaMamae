@@ -190,7 +190,7 @@ class WordSearchGame(
         "CARINHO", "BENCAO", "ORACAO", "COZINHA", "TRICO", "CROCHE", "NOVELA", "BINGO"
     )
 
-    private var level = 1
+    private var level = Progress.level(c, "cacapalavras")
     private var size = 8
     private var grid = Array(0) { CharArray(0) }
     private var placed = listOf<String>()
@@ -260,7 +260,7 @@ class WordSearchGame(
         val dirs = listOf(
             0 to 1, 1 to 0, 1 to 1, 0 to -1, -1 to 0, -1 to -1, 1 to -1, -1 to 1
         ).take(if (level < 3) 3 else if (level < 5) 5 else 8)
-        val chosen = bank.filter { it.length <= size }.shuffled().take(minOf(4 + level, 10))
+        val chosen = bank.filter { it.length <= size }.shuffled().take(minOf(4 + level, 14))
         val ok = mutableListOf<String>()
 
         for (w in chosen) {
@@ -292,9 +292,10 @@ class WordSearchGame(
             }
         }
         placed = ok
+        val filler = ok.joinToString("").toList().ifEmpty { ('A'..'Z').toList() }
 
         for (r in 0 until size) for (col in 0 until size) {
-            if (grid[r][col] == '\u0000') grid[r][col] = ('A'..'Z').random()
+            if (grid[r][col] == '\u0000') grid[r][col] = if (level >= 8) filler.random() else ('A'..'Z').random()
         }
         foundLines.clear()
         title.text = "Caça-Palavras · Nível $level"
@@ -321,6 +322,7 @@ class WordSearchGame(
             msg.text = "🎉 Achou todas!"
             nextHolder.addView(Ui.btn(context, "Próximo nível →") {
                 level++
+                Progress.setLevel(context, "cacapalavras", level)
                 start()
             })
             board.animate().scaleX(1.03f).scaleY(1.03f).setDuration(160).withEndAction {

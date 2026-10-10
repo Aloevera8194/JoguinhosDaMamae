@@ -34,12 +34,12 @@ class MainActivity : Activity() {
             Item("🔩", "Ordenar Porcas", 0xFF3949AB.toInt(), 0xFF7986CB.toInt(), "porcas") { SortGame(this, true, ::showMenu) },
             Item("🐦", "Ordenar Pássaros", 0xFF00ACC1.toInt(), 0xFF4DD0E1.toInt(), "passaros") { SortGame(this, false, ::showMenu) },
             Item("🎨", "Areia Colorida", 0xFF8E24AA.toInt(), 0xFFBA68C8.toInt(), "areia") { SandGame(this, ::showMenu) },
-            Item("🀄", "Mahjong", 0xFFD32F2F.toInt(), 0xFFEF5350.toInt(), null) { MahjongGame(this, ::showMenu) },
-            Item("🔎", "Caça-Palavras", 0xFF43A047.toInt(), 0xFF81C784.toInt(), null) { WordSearchGame(this, ::showMenu) },
-            Item("✏️", "Palavras Cruzadas", 0xFFF57C00.toInt(), 0xFFFFB74D.toInt(), null) { CrosswordGame(this, ::showMenu) },
-            Item("🔢", "Sudoku", 0xFF1E88E5.toInt(), 0xFF64B5F6.toInt(), null) { SudokuGame(this, ::showMenu) },
-            Item("🧠", "Memória", 0xFFD81B60.toInt(), 0xFFF06292.toInt(), null) { MemoryGame(this, ::showMenu) },
-            Item("🍬", "Combinar 3", 0xFF00695C.toInt(), 0xFF26A69A.toInt(), null) { MatchGame(this, ::showMenu) },
+            Item("🀄", "Mahjong", 0xFFD32F2F.toInt(), 0xFFEF5350.toInt(), "mahjong") { MahjongGame(this, ::showMenu) },
+            Item("🔎", "Caça-Palavras", 0xFF43A047.toInt(), 0xFF81C784.toInt(), "cacapalavras") { WordSearchGame(this, ::showMenu) },
+            Item("✏️", "Palavras Cruzadas", 0xFFF57C00.toInt(), 0xFFFFB74D.toInt(), "cruzadas") { CrosswordGame(this, ::showMenu) },
+            Item("🔢", "Sudoku", 0xFF1E88E5.toInt(), 0xFF64B5F6.toInt(), "sudoku") { SudokuGame(this, ::showMenu) },
+            Item("🧠", "Memória", 0xFFD81B60.toInt(), 0xFFF06292.toInt(), "memoria") { MemoryGame(this, ::showMenu) },
+            Item("🍬", "Combinar 3", 0xFF00695C.toInt(), 0xFF26A69A.toInt(), "combinar3") { MatchGame(this, ::showMenu) },
             Item("🃏", "Paciência", 0xFF6D4C41.toInt(), 0xFFA1887F.toInt(), null) { SolitaireGame(this, ::showMenu) }
         )
 

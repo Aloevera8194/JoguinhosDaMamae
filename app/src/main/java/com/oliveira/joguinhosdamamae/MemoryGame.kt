@@ -21,10 +21,10 @@ class MemoryGame(
     }
 
     private val symbols = listOf(
-        "🍎", "🍌", "🍇", "🍓", "🍊", "🍒", "🌻", "🐶", "🐱", "🐟", "🚗", "⭐", "🏠", "🎈", "🍰"
+        "🍎", "🍌", "🍇", "🍓", "🍊", "🍒", "🌻", "🐶", "🐱", "🐟", "🚗", "⭐", "🏠", "🎈", "🍰", "🍉", "🍍", "🥕", "🐸", "🐢", "🦋", "🌈", "🚲", "🎁"
     )
 
-    private var level = 1
+    private var level = Progress.level(c, "memoria")
     private var moves = 0
     private var cols = 3
     private var cards = listOf<Card>()
@@ -114,7 +114,9 @@ class MemoryGame(
             1 -> 6
             2 -> 8
             3 -> 10
-            else -> 12
+            4 -> 12
+            5 -> 14
+            else -> 16
         }
         cols = if (pairs == 6) 3 else 4
         val chosen = symbols.shuffled().take(pairs)
@@ -237,7 +239,7 @@ class MemoryGame(
                     flip(views[i2], card, false)
                 }
                 busy = false
-            }, 1400)
+            }, maxOf(900, 1500 - level * 60).toLong())
         }
     }
 
@@ -247,6 +249,7 @@ class MemoryGame(
         nextHolder.removeAllViews()
         nextHolder.addView(Ui.btn(context, "Próximo nível →") {
             level++
+            Progress.setLevel(context, "memoria", level)
             start()
         })
         var n = 0L

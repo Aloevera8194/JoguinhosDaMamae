@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.MotionEvent
@@ -18,16 +19,47 @@ class MjTile(val l: Int, val r: Int, val c: Int, var s: String) {
     var a = 1f
 }
 
+class MjLayout(val name: String, val rows: Int, val cols: Int, val cells: List<Triple<Int, Int, Int>>)
+
+object MjLayouts {
+    private fun rect(l: Int, r0: Int, r1: Int, c0: Int, c1: Int): List<Triple<Int, Int, Int>> {
+        val out = ArrayList<Triple<Int, Int, Int>>()
+        for (r in r0..r1) for (c in c0..c1) out.add(Triple(l, r, c))
+        return out
+    }
+
+    val all: List<MjLayout> = listOf(
+        MjLayout("Primeiros passos", 4, 5, rect(0, 0, 3, 0, 4)),
+        MjLayout("Retângulo", 5, 6, rect(0, 0, 4, 0, 5)),
+        MjLayout("Dois níveis", 5, 6, rect(0, 0, 4, 0, 5) + rect(1, 1, 3, 1, 4)),
+        MjLayout("Clássico", 5, 6, rect(0, 0, 4, 0, 5) + rect(1, 1, 3, 1, 4) + rect(2, 2, 2, 2, 3)),
+        MjLayout(
+            "Cruz", 7, 6,
+            rect(0, 0, 6, 2, 3) + rect(0, 2, 4, 0, 1) + rect(0, 2, 4, 4, 5) +
+                rect(1, 1, 5, 2, 3) + rect(2, 2, 4, 2, 3) + rect(3, 3, 3, 2, 3)
+        ),
+        MjLayout("Torre", 6, 6, rect(0, 0, 5, 0, 5) + rect(1, 1, 4, 1, 4) + rect(2, 2, 3, 2, 3)),
+        MjLayout(
+            "Pirâmide", 7, 6,
+            rect(0, 0, 6, 0, 5) + rect(1, 1, 5, 1, 4) + rect(2, 2, 4, 2, 3) + rect(3, 3, 3, 2, 3)
+        ),
+        MjLayout(
+            "Fortaleza", 8, 6,
+            rect(0, 0, 7, 0, 5) + rect(1, 1, 6, 1, 4) + rect(2, 2, 5, 2, 3) + rect(3, 3, 4, 2, 3)
+        )
+    )
+}
+
 class MahjongBoard(ctx: Context) : View(ctx) {
     var sel: MjTile? = null
     var hint: Set<MjTile> = emptySet()
     var isFree: (MjTile) -> Boolean = { true }
     var onTap: (MjTile) -> Unit = {}
+    var rows = 5
+    var cols = 6
     private var order: List<MjTile> = emptyList()
     private val p = Paint(Paint.ANTI_ALIAS_FLAG)
     private val d = ctx.resources.displayMetrics.density
-    private val rows = 5
-    private val cols = 6
     private var tw = 0f
     private var th = 0f
     private var fw = 0f
@@ -40,6 +72,7 @@ class MahjongBoard(ctx: Context) : View(ctx) {
 
     fun load(list: List<MjTile>) {
         order = list.sortedWith(compareBy({ it.l }, { it.r }, { it.c }))
+        requestLayout()
         invalidate()
     }
 
@@ -147,13 +180,21 @@ class MahjongGame(
     private val onBack: () -> Unit
 ) : LinearLayout(c) {
 
-    private val symbols = listOf("⚓", "🚢", "🗼", "🧭", "🗺️", "⛵", "🐚", "🦀", "🐙", "🌊", "🏝️")
+    private val symbols = listOf(
+        "⚓", "🚢", "🗼", "🧭", "🗺️", "⛵", "🐚", "🦀", "🐙", "🌊",
+        "🏝️", "🐬", "🐳", "🐠", "🦞", "🌴", "☀️", "🌙", "⭐", "🎣"
+    )
+
+    private var level = Progress.level(c, "mahjong")
+    private var lay: MjLayout = MjLayouts.all[0]
     private var tiles = listOf<MjTile>()
     private var sel: MjTile? = null
     private var hint: Set<MjTile> = emptySet()
     private val history = ArrayList<Pair<MjTile, MjTile>>()
     private lateinit var board: MahjongBoard
     private lateinit var msg: TextView
+    private lateinit var info: TextView
+    private lateinit var nextHolder: LinearLayout
 
     init {
         orientation = VERTICAL
@@ -171,11 +212,24 @@ class MahjongGame(
         val c = context
         val bar = Ui.row(c)
         bar.addView(Ui.smallBtn(c, "← Menu") { onBack() })
-        bar.addView(Ui.text(c, "Mahjong", 18f, true).apply {
+        bar.addView(Ui.text(c, "Mahjong", 20f, true).apply {
             setTextColor(Color.WHITE)
             setPadding(Ui.dp(c, 12), 0, 0, 0)
         })
         addView(bar)
+
+        info = TextView(c).apply {
+            textSize = 17f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
+            setPadding(Ui.dp(c, 16), Ui.dp(c, 6), Ui.dp(c, 16), Ui.dp(c, 6))
+            background = Ui.shape(0x33FFFFFF, Ui.dp(c, 16).toFloat())
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { setMargins(0, Ui.dp(c, 6), 0, Ui.dp(c, 2)) }
+        }
+        addView(info)
 
         msg = Ui.text(c, "", 17f, true).apply {
             setTextColor(0xFFFFEB3B.toInt())
@@ -197,14 +251,10 @@ class MahjongGame(
         r2.addView(Ui.smallBtn(c, "🔀 Embaralhar") { shuffleRemaining() })
         r2.addView(Ui.smallBtn(c, "🔄 Novo jogo") { newGame() })
         addView(r2)
-    }
 
-    private fun layout(): List<Triple<Int, Int, Int>> {
-        val pos = mutableListOf<Triple<Int, Int, Int>>()
-        for (r in 0..4) for (c in 0..5) pos.add(Triple(0, r, c))
-        for (r in 1..3) for (c in 1..4) pos.add(Triple(1, r, c))
-        for (c in 2..3) pos.add(Triple(2, 2, c))
-        return pos
+        nextHolder = LinearLayout(c)
+        nextHolder.orientation = LinearLayout.VERTICAL
+        addView(nextHolder)
     }
 
     private fun freeIn(rem: List<Triple<Int, Int, Int>>, p: Triple<Int, Int, Int>): Boolean {
@@ -216,10 +266,12 @@ class MahjongGame(
     }
 
     private fun deal(): List<MjTile> {
-        val pos = layout()
+        val pos = lay.cells
+        val pairs = pos.size / 2
+        val distinct = minOf(symbols.size, minOf(pairs, 5 + level))
         while (true) {
             val rem = pos.toMutableList()
-            val pairSyms = symbols.flatMap { listOf(it, it) }.shuffled().toMutableList()
+            val pairSyms = (0 until pairs).map { symbols[it % distinct] }.shuffled().toMutableList()
             val assign = HashMap<Triple<Int, Int, Int>, String>()
             var ok = true
             while (rem.isNotEmpty()) {
@@ -252,10 +304,16 @@ class MahjongGame(
         tiles.filter { free(it) }.groupBy { it.s }.any { it.value.size >= 2 }
 
     private fun newGame() {
+        lay = MjLayouts.all[minOf((level - 1) / 2, MjLayouts.all.size - 1)]
         tiles = deal()
         sel = null
         hint = emptySet()
         history.clear()
+        msg.text = ""
+        nextHolder.removeAllViews()
+        info.text = "Nível $level  •  ${lay.name}"
+        board.rows = lay.rows
+        board.cols = lay.cols
         board.load(tiles)
         push()
     }
@@ -264,10 +322,17 @@ class MahjongGame(
         board.sel = sel
         board.hint = hint
         board.invalidate()
-        msg.text = when {
-            tiles.all { it.gone } -> "🎉 Parabéns, limpou tudo!"
-            !hasMoves() -> "Sem jogadas. Toque em Embaralhar"
-            else -> ""
+        if (tiles.all { it.gone }) {
+            msg.text = "🎉 Parabéns, limpou tudo!"
+            if (nextHolder.childCount == 0) {
+                nextHolder.addView(Ui.btn(context, "Próximo nível →") {
+                    level++
+                    Progress.setLevel(context, "mahjong", level)
+                    newGame()
+                })
+            }
+        } else {
+            msg.text = if (!hasMoves()) "Sem jogadas. Toque em Embaralhar" else ""
         }
     }
 
@@ -312,6 +377,7 @@ class MahjongGame(
         b.a = 1f
         sel = null
         hint = emptySet()
+        nextHolder.removeAllViews()
         push()
     }
 
